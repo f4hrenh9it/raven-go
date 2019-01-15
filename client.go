@@ -372,6 +372,26 @@ func New(dsn string) (*Client, error) {
 	return client, client.SetDSN(dsn)
 }
 
+func NewWithInsecure(dsn string) (*Client, error) {
+	t := &HTTPTransport{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	t.Client = &http.Client{
+		Transport: tr,
+	}
+	client := &Client{
+		Transport:  t,
+		context:    &context{},
+		sampleRate: 1.0,
+		queue:      make(chan *outgoingPacket, MaxQueueBuffer),
+	}
+	client.SetDSN(os.Getenv("SENTRY_DSN"))
+	client.SetRelease(os.Getenv("SENTRY_RELEASE"))
+	client.SetEnvironment(os.Getenv("SENTRY_ENVIRONMENT"))
+	return client, client.SetDSN(dsn)
+}
+
 // NewWithTags constructs a new Sentry client instance with default tags.
 func NewWithTags(dsn string, tags map[string]string) (*Client, error) {
 	client := newClient(tags)
